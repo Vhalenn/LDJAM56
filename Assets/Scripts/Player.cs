@@ -3,11 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+using TMPro;
+
 public class Player : MonoBehaviour
 {
     [SerializeField] private GameDataScriptable gameDataScriptable;
     [SerializeField] private Rigidbody rb;
     [SerializeField] private Transform backpackTr;
+    [SerializeField] private TextMeshPro resourceText;
 
     [Header("Param")]
     [SerializeField] private float maxAcce = 5;
@@ -36,7 +39,7 @@ public class Player : MonoBehaviour
         }
     }
 
-    private const int MAX_QUANTITY_CARRIED_PLAYER = 15;
+    private const int MAX_QUANTITY_CARRIED_PLAYER = 30;
     private const int MAX_QUANTITY_CARRIED_CREATURE = 4;
     public bool IsFull => QuantityCarried >= MAX_QUANTITY_CARRIED_PLAYER;
 
@@ -58,7 +61,7 @@ public class Player : MonoBehaviour
         {
             backpackObjects[i] = backpackTr.GetChild(i).gameObject;
         }
-        //UpdateBackpack();
+        UpdateBackpack();
     }
 
 
@@ -88,10 +91,15 @@ public class Player : MonoBehaviour
         Vector3 camDir = FollowingCamAngle(playerInput);
         AdjustVelocity(camDir * maxSpeed);
 
-        if (playerInput.magnitude > 0.01f && velocity.magnitude > 0.001f)
+        if (playerInput.magnitude > 0.01f)
         {
             rb.rotation = Quaternion.Lerp(rb.rotation, Quaternion.LookRotation(velocity, Vector3.up), rotSpeed);
         }
+        else
+        {
+            rb.angularVelocity = Vector3.zero;
+        }
+
         rb.linearVelocity = velocity;
     }
 
@@ -168,7 +176,7 @@ public class Player : MonoBehaviour
     #region Interactions
     private bool DicoEmpty => (interactionDico == null || interactionDico.Count <= 0);
 
-    public void AddInteractible(IInteractible interactible, GameObject gO)
+    public void AddInteractible(IInteractible interactible, GameObject gO) // When enter a new Interactible
     {
         if (interactible == null || gO == null) return;
         interactionDico.TryAdd(interactible, gO);
@@ -188,13 +196,14 @@ public class Player : MonoBehaviour
         UpdateUITarget();
     }
 
-    private void UpdateUITarget()
+    private void UpdateUITarget() 
     {
         if (!DicoEmpty)
         {
             KeyValuePair<IInteractible, GameObject> pair = interactionDico.First();
             GameObject target = pair.Value;
             if (target == null) return;
+
             gameDataScriptable.UI.StickToTarget.Attach(target.transform, Vector3.one);
 
             interactibleText = pair.Key.UIText();
@@ -202,10 +211,11 @@ public class Player : MonoBehaviour
         else
         {
             gameDataScriptable.UI.StickToTarget.Attach(null, Vector3.one);
+            interactibleText = string.Empty;
         }
     }
 
-    private void SetUITargetText()
+    private void SetUITargetText() // Called really often
     {
         if (DicoEmpty) return;
         bool requireCrea = interactionDico.First().Key.RequireCreature();
@@ -214,9 +224,13 @@ public class Player : MonoBehaviour
         {
             SetUITargetText(interactibleText);
         }
-        if (IsFull && gameDataScriptable.FindAvailableCreature() != null)// If dont need crea OR have creatures around
+        else if (IsFull && gameDataScriptable.FindAvailableCreature() != null)// If dont need crea OR have creatures around
         {
             SetUITargetText("Full");
+        }
+        else
+        {
+            SetUITargetText(interactibleText);
         }
     }
 
@@ -270,7 +284,7 @@ public class Player : MonoBehaviour
 
             KeyValuePair<ResourceType, int> toDeliver = resourcesDico.Last();
 
-            int quantity = Mathf.Max(toDeliver.Value, MAX_QUANTITY_CARRIED_CREATURE);
+            int quantity = Mathf.Min(toDeliver.Value, MAX_QUANTITY_CARRIED_CREATURE);
             crea.DoDelivery(toDeliver.Key, quantity);
 
             resourcesDico[toDeliver.Key] -= quantity;
@@ -297,7 +311,11 @@ public class Player : MonoBehaviour
     #region Visual
     private void UpdateBackpack()
     {
-        int quantity = QuantityCarried / 2;
+        int quantity = QuantityCarried;
+
+        if (resourceText) resourceText.text = $"{quantity}/{MAX_QUANTITY_CARRIED_PLAYER}";
+
+        quantity /= 2;
         for (int i = 0; i < backpackObjects.Length; i++)
         {
             backpackObjects[i].SetActive(i < quantity);

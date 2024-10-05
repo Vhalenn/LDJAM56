@@ -13,7 +13,7 @@ public class SerializedDictionnary<TKey, TValue> : Dictionary<TKey, TValue>, ISe
 
         if (keys.Count != values.Count)
         {
-            Debug.LogError("Something went wrong on dictionnary");
+            Debug.LogError($"Something went wrong on dictionnary ({keys.Count} vs {values.Count})");
         }
 
         for (int i = 0; i < keys.Count; i++)

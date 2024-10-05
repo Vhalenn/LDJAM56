@@ -19,6 +19,8 @@ public class Cage : Interactible
         {
             creatureArray[i].Free();
         }
+
+        player.RemoveInteractible(this);
         used = state;
     }
 }

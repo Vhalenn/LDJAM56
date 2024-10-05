@@ -62,6 +62,8 @@ public class BaseCamp : MonoBehaviour
             {
                 Delivery(pair.Key, pair.Value);
             }
+
+            player.ClearRessourceDico();
         }
     }
 }

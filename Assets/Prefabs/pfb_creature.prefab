@@ -434,13 +434,14 @@ MonoBehaviour:
   agent: {fileID: 3822384659748060106}
   model: {fileID: 7681230019771556275}
   readySignal: {fileID: 2047939938001830883}
-  randomSpeed: {x: 4, y: 9}
+  randomSpeed: {x: 4, y: 15}
   randomizedSpeed: 0
   randomScale: {x: 0.8, y: 1.2}
   randomStop: {x: 4, y: 6}
   randomizedStop: 0
   behaviour: 0
-  resourceCarried: {fileID: 0}
+  resourceCarried: 0
+  resourceQuantity: 0
 --- !u!135 &6717530388162430185
 SphereCollider:
   m_ObjectHideFlags: 0
