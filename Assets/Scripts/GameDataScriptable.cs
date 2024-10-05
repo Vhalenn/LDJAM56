@@ -1,10 +1,13 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "GameDataScriptable", menuName = "Scriptable Objects/GameDataScriptable")]
 public class GameDataScriptable : ScriptableObject
 {
     [Header("Main Actors")]
+    [SerializeField] private GameManager game; public GameManager Game { get => game; set => game = value; }
     [SerializeField] private Player player; public Player Player { get => player; set => player = value; }
+    [SerializeField] private MainMenuUI ui; public MainMenuUI UI { get => ui; set => ui = value; }
     [SerializeField] private BaseCamp camp; public BaseCamp Camp { get => camp; set => camp = value; }
 
     [Header("World")]
@@ -17,6 +20,13 @@ public class GameDataScriptable : ScriptableObject
     public bool Night { get => night; set => night = value; }
 
     [Header("Team")]
-    [SerializeField] private int creatureCount;
-    public int CreatureCount { get => creatureCount; set => creatureCount = value; }
+    public int CreatureCount => game.CreatureCount;
+
+    public void Clean()
+    {
+        
+    }
+
+    public void AddCreature(Creature creature) => game.AddCreature(creature);
+    public Creature FindAvailableCreature() => game.FindAvailableCreature();
 }

@@ -516,8 +516,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cb095ee620ddb24686dc471b0124fe2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 0
-  quantity: {x: 3, y: 5}
+  data: {fileID: 11400000, guid: c0695570285030a4c8757bbd44035f05, type: 2}
   model: {fileID: 3065568816739892797}
   used: 0
 --- !u!135 &3265426142435295058
@@ -540,7 +539,7 @@ SphereCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Radius: 3
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0, y: 2, z: 0}
 --- !u!1 &4940715645601589022
 GameObject:
   m_ObjectHideFlags: 0

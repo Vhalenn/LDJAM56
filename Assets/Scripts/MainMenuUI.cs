@@ -7,6 +7,8 @@ using UnityEngine.SceneManagement;
 public class MainMenuUI : MonoBehaviour
 {
     [SerializeField] private CanvasGroup pauseMenu;
+    [SerializeField] private UI_StickToTarget stickToTarget;
+    public UI_StickToTarget StickToTarget => stickToTarget;
 
     private void Start()
     {

@@ -1,46 +1,48 @@
 using UnityEngine;
-
 using DG.Tweening;
 
-public class Resource : MonoBehaviour
+public class Resource : Interactible
 {
-    [SerializeField] private ResourceType type;
-    [SerializeField] private Vector2Int quantity;
+    [SerializeField] private ResourceDataScriptable data;
+    [SerializeField] private ResourceType type => data.Type;
+    [SerializeField] private Vector2Int quantity => data.Quantity;
 
     [Header("Elements")]
     [SerializeField] private GameObject model;
 
     [Header("Storage")]
-    [SerializeField] private bool used;
     private Tween tween;
 
-    private void Start()
+    public override bool RequireCreature()
     {
-        
+        return true;
     }
 
-    private void OnTriggerEnter(Collider other)
+    public override string UIText()
     {
-        if (used) return;
-        if(other.TryGetComponent(out Player player))
-        {
-            UseResource(true);
-        }
+        return $"Grab [{data.Type}]";
     }
 
-    public void UseResource(bool state)
+    public override void SetState(Player player, bool state)
     {
         tween?.Kill();
-        tween = model.transform.DOScale(state ? 0.01f : 1f, 0.15f);
 
+        if(player && state) // Try to use it
+        {
+            player.AddResource(data);
+            player.RemoveInteractible(this);
+        }
+
+        tween = model.transform.DOScale(state ? 0.01f : 1f, 0.15f);
         used = state;
     }
 }
 
 public enum ResourceType
 {
-    grass, // To feed the creatures
-    metal, // To protect the shelter
-    wood,  // To build bridges to go further
-    rocks, // To build staircase
+    Food,  // To feed the creatures
+    Metal, // To protect the shelter
+    Wood,  // To build bridges to go further, to stay warm
+    Rocks, // To build staircase
+    Flint, // To keep warm ++
 }

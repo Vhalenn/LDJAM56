@@ -6,6 +6,7 @@ public class Creature : MonoBehaviour
     [SerializeField] private GameDataScriptable gameDataScriptable;
     [SerializeField] private NavMeshAgent agent;
     [SerializeField] private Transform model;
+    [SerializeField] private GameObject readySignal;
 
     [Header("Var")]
     [SerializeField] private Vector2 randomSpeed = new Vector2(3f,4f);
@@ -16,8 +17,14 @@ public class Creature : MonoBehaviour
 
     [Header("State")]
     [SerializeField] private CreatureBehaviour behaviour;
-    private bool Resting => behaviour == CreatureBehaviour.Rest;
+    public bool Trapped => behaviour == CreatureBehaviour.Trapped;
+    public bool Resting => behaviour == CreatureBehaviour.Rest;
+    public bool Delivery => behaviour == CreatureBehaviour.Delivery;
+    public bool Following => behaviour == CreatureBehaviour.Follow;
 
+    [Header("Storage")]
+    [SerializeField] private ResourceType resourceCarried;
+    [SerializeField] int resourceQuantity;
 
     private Player player;
     private Player Player
@@ -38,45 +45,111 @@ public class Creature : MonoBehaviour
 
         randomizedStop = Random.Range(randomStop.x, randomStop.y);
         agent.stoppingDistance = randomizedStop;
+
+        resourceQuantity = 0;
+
+        if (!Trapped) gameDataScriptable.AddCreature(this);
     }
 
     private void FixedUpdate()
     {
+        if (Trapped) return;
+        if(readySignal) readySignal.SetActive(NearPlayer);
+
         if (!gameDataScriptable) return;
 
-
-        if(gameDataScriptable.Night) ChangeBehaviour(CreatureBehaviour.Rest);
+        if(resourceQuantity > 0) ChangeBehaviour(CreatureBehaviour.Delivery);
+        else if (gameDataScriptable.Night) ChangeBehaviour(CreatureBehaviour.Rest);
         else ChangeBehaviour(CreatureBehaviour.Follow);
 
         ApplyBehaviour();
     }
 
+    public void Free()
+    {
+        ChangeBehaviour(CreatureBehaviour.Follow);
+        gameDataScriptable.AddCreature(this);
+    }
+
+    public void ChangeBehaviourPublic(CreatureBehaviour behaviour) => ChangeBehaviour(behaviour);
     private void ChangeBehaviour(CreatureBehaviour behaviour)
     {
         if (this.behaviour == behaviour) return;
         this.behaviour = behaviour;
 
-        agent.speed = Resting ? randomizedSpeed * 1.5f : randomizedSpeed;
-        agent.stoppingDistance = Resting ? randomizedStop * 0.33f : randomizedStop;
-    }     
+        // When camp is destroyed
+        if (behaviour == CreatureBehaviour.Rest && gameDataScriptable.Camp == null)
+        {
+            this.behaviour = CreatureBehaviour.Follow;
+        }
+
+        agent.speed = Resting || Delivery ? randomizedSpeed * 1.5f : randomizedSpeed;
+        agent.stoppingDistance = Resting || Delivery ? randomizedStop * 0.33f : randomizedStop;
+    }
+
+    private Vector3 CampPos => gameDataScriptable.Camp.transform.position;
+    private Vector3 GoalPos
+    {
+        get
+        {
+            if (gameDataScriptable.Camp != null && (Delivery || Resting)) return CampPos;
+            else return Player.transform.position;
+        }
+    }
+
+    private float GoalDist
+    {
+        get
+        {
+            return Vector3.Distance(transform.position, GoalPos);
+        }
+    }
+
+    public bool NearPlayer => Following && GoalDist < randomizedStop * 1.5f;
 
     private void ApplyBehaviour()
     {
         switch (behaviour)
         {
             case CreatureBehaviour.Follow:
-                if (!Player) return;
-                agent.SetDestination(Player.transform.position);
+                agent.SetDestination(GoalPos);
                 break;
 
             case CreatureBehaviour.Rest:
-                agent.SetDestination(gameDataScriptable.Camp.transform.position);
+                agent.SetDestination(GoalPos);
+                break;
+
+            case CreatureBehaviour.Delivery:
+                if(gameDataScriptable.Camp == null) ChangeBehaviour(CreatureBehaviour.Follow);
+
+                float campDistance = Vector3.Distance(transform.position, CampPos);
+                if(campDistance > randomizedStop * 1.5f) // Still far
+                {
+                    agent.SetDestination(CampPos);
+                }
+                else // Arrived
+                {
+                    gameDataScriptable.Camp.Delivery(resourceCarried, resourceQuantity);
+                    resourceQuantity = 0;
+                    ChangeBehaviour(CreatureBehaviour.Follow);
+                }
+
                 break;
 
             default:
                 break;
 
         }
+    }
+
+    // ACTIONS
+    public void DoDelivery(ResourceType resourceCarried, int resourceQuantity)
+    {
+        Debug.Log($"{transform.name} -> DoDelivery({resourceCarried},{resourceQuantity}");
+
+        this.resourceCarried = resourceCarried;
+        this.resourceQuantity = resourceQuantity;
+        ChangeBehaviour(CreatureBehaviour.Delivery);
     }
 }
 
@@ -90,8 +163,10 @@ public enum CreatureType
 
 public enum CreatureBehaviour
 {
+    Trapped, // When not available at start
     Wait,
-    Follow,
+    Follow,  // Near Player
     Rest,
+    Delivery, // When bringing resource to Player
 }
 

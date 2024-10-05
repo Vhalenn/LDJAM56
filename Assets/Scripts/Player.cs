@@ -1,17 +1,49 @@
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    [SerializeField] private GameDataScriptable gameDataScriptable;
     [SerializeField] private Rigidbody rb;
+    [SerializeField] private Transform backpackTr;
 
     [Header("Param")]
     [SerializeField] private float maxAcce = 5;
     [SerializeField] private float maxSpeed = 5;
+    [SerializeField, Range(0f,1f)] private float rotSpeed = 0.5f;
+
+    [Header("Interactions")]
+    [SerializeField] private SerializedDictionnary<IInteractible, GameObject> interactionDico = new();
+    [SerializeField] private IInteractible actualTarget;
+    [SerializeField] private string interactibleText;
+    [SerializeField] private SerializedDictionnary<ResourceType, int> resourcesDico = new();
+    public SerializedDictionnary<ResourceType, int> ResourcesDico => resourcesDico;
+
+    public int QuantityCarried
+    {
+        get
+        {
+            int quantity = 0;
+            if (resourcesDico == null || resourcesDico.Count == 0) return quantity;
+
+            foreach (KeyValuePair<ResourceType, int> pair in resourcesDico)
+            {
+                quantity += pair.Value;
+            }
+            return quantity;
+        }
+    }
+
+    private const int MAX_QUANTITY_CARRIED_PLAYER = 15;
+    private const int MAX_QUANTITY_CARRIED_CREATURE = 4;
+    public bool IsFull => QuantityCarried >= MAX_QUANTITY_CARRIED_PLAYER;
+
 
     [Header("Storage")]
     [SerializeField] private Camera mainCam;
+    [SerializeField] private GameObject[] backpackObjects;
     private Transform camTransform;
     [SerializeField] private Vector2 playerInput;
     [SerializeField] private Vector3 velocity;
@@ -20,6 +52,13 @@ public class Player : MonoBehaviour
     private void Start()
     {
         if(!mainCam) mainCam = Camera.main;
+
+        backpackObjects = new GameObject[backpackTr.childCount];
+        for (int i = 0; i < backpackObjects.Length; i++)
+        {
+            backpackObjects[i] = backpackTr.GetChild(i).gameObject;
+        }
+        //UpdateBackpack();
     }
 
 
@@ -27,12 +66,20 @@ public class Player : MonoBehaviour
     {
         playerInput.x = Input.GetAxis("Horizontal");
         playerInput.y = Input.GetAxis("Vertical");
+
+        SetUITargetText();
+        if (Input.GetButtonDown("Use")) UseInteractible();
+
+        AskForDelivery();
     }
 
     private void FixedUpdate()
     {
         MoveChara();
     }
+
+    // Movement
+    #region Movement
 
     private void MoveChara() // On Fixed Update
     {
@@ -41,6 +88,10 @@ public class Player : MonoBehaviour
         Vector3 camDir = FollowingCamAngle(playerInput);
         AdjustVelocity(camDir * maxSpeed);
 
+        if (playerInput.magnitude > 0.01f && velocity.magnitude > 0.001f)
+        {
+            rb.rotation = Quaternion.Lerp(rb.rotation, Quaternion.LookRotation(velocity, Vector3.up), rotSpeed);
+        }
         rb.linearVelocity = velocity;
     }
 
@@ -110,4 +161,149 @@ public class Player : MonoBehaviour
         Vector3 dir = forward * input.y + right * input.x;
         return dir;
     }
+    #endregion
+    // End - Movement
+
+    // Interactions
+    #region Interactions
+    private bool DicoEmpty => (interactionDico == null || interactionDico.Count <= 0);
+
+    public void AddInteractible(IInteractible interactible, GameObject gO)
+    {
+        if (interactible == null || gO == null) return;
+        interactionDico.TryAdd(interactible, gO);
+
+        UpdateUITarget();
+    }
+
+    public void RemoveInteractible(IInteractible interactible)
+    {
+        if (interactible == null) return;
+
+        if (interactionDico.ContainsKey(interactible))
+        {
+            interactionDico.Remove(interactible);
+        }
+
+        UpdateUITarget();
+    }
+
+    private void UpdateUITarget()
+    {
+        if (!DicoEmpty)
+        {
+            KeyValuePair<IInteractible, GameObject> pair = interactionDico.First();
+            GameObject target = pair.Value;
+            if (target == null) return;
+            gameDataScriptable.UI.StickToTarget.Attach(target.transform, Vector3.one);
+
+            interactibleText = pair.Key.UIText();
+        }
+        else
+        {
+            gameDataScriptable.UI.StickToTarget.Attach(null, Vector3.one);
+        }
+    }
+
+    private void SetUITargetText()
+    {
+        if (DicoEmpty) return;
+        bool requireCrea = interactionDico.First().Key.RequireCreature();
+
+        if(!requireCrea)
+        {
+            SetUITargetText(interactibleText);
+        }
+        if (IsFull && gameDataScriptable.FindAvailableCreature() != null)// If dont need crea OR have creatures around
+        {
+            SetUITargetText("Full");
+        }
+    }
+
+    private void SetUITargetText(string text)
+    {
+        gameDataScriptable.UI.StickToTarget.SetText(text);
+    }
+
+    private void UseInteractible()
+    {
+        if (DicoEmpty) return;
+
+        IInteractible interactible = interactionDico.First().Key;
+        if (interactible.RequireCreature() && IsFull)
+        {
+            SetUITargetText("Full");
+            return;
+        }
+
+        Debug.Log("Player.UseInteractible()");
+
+        if(interactible != null) interactible.SetState(this, true);
+
+        UpdateUITarget();
+    }
+
+    public void AddResource(ResourceDataScriptable ressource)
+    {
+        if (ressource == null) return;
+        if (resourcesDico == null) resourcesDico = new();
+
+        int quantity = ressource.GetRandomQuantity();
+        if (resourcesDico.ContainsKey(ressource.Type))
+        {
+            resourcesDico[ressource.Type] += quantity;
+        }
+        else
+        {
+            resourcesDico.Add(ressource.Type, quantity);
+        }
+
+        UpdateBackpack();
+    }
+
+    private void AskForDelivery()
+    {
+        if (QuantityCarried > 0)
+        {
+            Creature crea = gameDataScriptable.FindAvailableCreature();
+            if (!crea) return;
+
+            KeyValuePair<ResourceType, int> toDeliver = resourcesDico.Last();
+
+            int quantity = Mathf.Max(toDeliver.Value, MAX_QUANTITY_CARRIED_CREATURE);
+            crea.DoDelivery(toDeliver.Key, quantity);
+
+            resourcesDico[toDeliver.Key] -= quantity;
+            if (resourcesDico[toDeliver.Key] <= 0)
+            {
+                resourcesDico.Remove(toDeliver.Key);
+            }
+
+            UpdateBackpack();
+        }
+    }
+        
+
+    public void ClearRessourceDico() // Called by camp when going manually
+    {
+        resourcesDico = new();
+        UpdateBackpack();
+    }
+
+    #endregion
+    // End - Interactions
+
+    // Visuals
+    #region Visual
+    private void UpdateBackpack()
+    {
+        int quantity = QuantityCarried / 2;
+        for (int i = 0; i < backpackObjects.Length; i++)
+        {
+            backpackObjects[i].SetActive(i < quantity);
+        }
+    }
+
+    #endregion
+    // END - Visuals
 }
