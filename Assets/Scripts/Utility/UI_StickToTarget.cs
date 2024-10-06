@@ -15,7 +15,7 @@ public class UI_StickToTarget : MonoBehaviour
     [Header("Parameters")]
     [SerializeField] private bool adaptToScale = false;
     [SerializeField] private Vector3 offset = Vector3.zero;
-    [SerializeField] private Vector2 margin;
+    [SerializeField] private static Vector2 margin = new Vector2(40,80);
     [SerializeField] private float offsetWithSecondaryTarget = 1; // Linked with "targetSecondary"
     [Range(0, 1)][SerializeField] private float lerpSpeed = 0.1f; // Linked with "targetSecondary"
 
@@ -74,7 +74,8 @@ public class UI_StickToTarget : MonoBehaviour
 
         targetPos = target.position + offset;
         viewportPosition = WorldPosToUI(worldCam, _canvas, targetPos);
-        
+        viewportPosition = ClampToScreenBorders(viewportPosition);
+
         finalPosition = Vector3.Lerp(finalPosition, viewportPosition, lerpSpeed * 2f);
         
 
@@ -90,8 +91,8 @@ public class UI_StickToTarget : MonoBehaviour
     {
         float width = Screen.width;
         float height = Screen.height;
-        pos.x = Mathf.Clamp(pos.x, 0, width);
-        pos.y = Mathf.Clamp(pos.y, 0, height);
+        pos.x = Mathf.Clamp(pos.x, 0 + margin.x, width - margin.x);
+        pos.y = Mathf.Clamp(pos.y, 0 + margin.y, height - margin.y);
         return pos;
     }
 

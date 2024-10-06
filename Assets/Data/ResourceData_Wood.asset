@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   type: 2
   quantity: {x: 5, y: 8}
+  respawnChance: {x: 0.3, y: 0.9}

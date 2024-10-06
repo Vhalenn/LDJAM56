@@ -6,6 +6,7 @@ public class Resource : Interactible
     [SerializeField] private ResourceDataScriptable data;
     [SerializeField] private ResourceType type => data.Type;
     [SerializeField] private Vector2Int quantity => data.Quantity;
+    [SerializeField] private float respawnChance; public float RespawnChance => respawnChance;
 
     [Header("Elements")]
     [SerializeField] private GameObject model;
@@ -13,14 +14,19 @@ public class Resource : Interactible
     [Header("Storage")]
     private Tween tween;
 
-    public override bool RequireCreature()
+    private void Start()
     {
-        return true;
+        float respawnChance = data.GetRespawnChance();
+    }
+
+    public override int RequireCreature()
+    {
+        return 1;
     }
 
     public override string UIText()
     {
-        return $"Grab [{data.Type}]";
+        return $"<sprite name={data.Type}>";
     }
 
     public override void SetState(Player player, bool state)
@@ -33,7 +39,7 @@ public class Resource : Interactible
             player.RemoveInteractible(this);
         }
 
-        tween = model.transform.DOScale(state ? 0.01f : 1f, 0.15f);
+        tween = model.transform.DOScale(state ? 0.01f : 1f, state ? 0.15f : 1f);
         used = state;
     }
 }

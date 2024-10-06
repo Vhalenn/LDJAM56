@@ -9,11 +9,16 @@ public class Creature : MonoBehaviour
     [SerializeField] private GameObject readySignal;
 
     [Header("Var")]
+    [SerializeField] private CreatureType type; public CreatureType Type => type;
     [SerializeField] private Vector2 randomSpeed = new Vector2(3f,4f);
     [SerializeField] private float randomizedSpeed;
     [SerializeField] private Vector2 randomScale = new Vector2(0.8f,1.2f); 
     [SerializeField] private Vector2 randomStop = new Vector2(4f, 6f);
     [SerializeField] private float randomizedStop;
+
+    [Header("Sound")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip[] actionAudioClip;
 
     [Header("State")]
     [SerializeField] private CreatureBehaviour behaviour;
@@ -25,6 +30,7 @@ public class Creature : MonoBehaviour
     [Header("Storage")]
     [SerializeField] private ResourceType resourceCarried;
     [SerializeField] int resourceQuantity;
+    private bool CampExists => gameDataScriptable.Camp;
 
     private Player player;
     private Player Player
@@ -33,6 +39,16 @@ public class Creature : MonoBehaviour
         {
             if (!player) player = gameDataScriptable.Player;
             return player;
+        }
+    }
+
+    public int CapacityCarried
+    {
+        get
+        {
+            if (type == CreatureType.Leaf) return 4;
+            if (type == CreatureType.Branch) return 6;
+            else return 15;
         }
     }
     
@@ -47,6 +63,7 @@ public class Creature : MonoBehaviour
         agent.stoppingDistance = randomizedStop;
 
         resourceQuantity = 0;
+        readySignal.SetActive(false);
 
         if (!Trapped) gameDataScriptable.AddCreature(this);
     }
@@ -59,7 +76,7 @@ public class Creature : MonoBehaviour
         if (!gameDataScriptable) return;
 
         if(resourceQuantity > 0) ChangeBehaviour(CreatureBehaviour.Delivery);
-        else if (gameDataScriptable.Night) ChangeBehaviour(CreatureBehaviour.Rest);
+        else if (CampExists && gameDataScriptable.Night) ChangeBehaviour(CreatureBehaviour.Rest);
         else ChangeBehaviour(CreatureBehaviour.Follow);
 
         ApplyBehaviour();
@@ -69,6 +86,8 @@ public class Creature : MonoBehaviour
     {
         ChangeBehaviour(CreatureBehaviour.Follow);
         gameDataScriptable.AddCreature(this);
+
+        PlaySound(actionAudioClip);
     }
 
     public void ChangeBehaviourPublic(CreatureBehaviour behaviour) => ChangeBehaviour(behaviour);
@@ -78,7 +97,7 @@ public class Creature : MonoBehaviour
         this.behaviour = behaviour;
 
         // When camp is destroyed
-        if (behaviour == CreatureBehaviour.Rest && gameDataScriptable.Camp == null)
+        if (behaviour == CreatureBehaviour.Rest && !CampExists)
         {
             this.behaviour = CreatureBehaviour.Follow;
         }
@@ -87,12 +106,19 @@ public class Creature : MonoBehaviour
         agent.stoppingDistance = Resting || Delivery ? randomizedStop * 0.33f : randomizedStop;
     }
 
-    private Vector3 CampPos => gameDataScriptable.Camp.transform.position;
+    private Vector3 CampPos
+    {
+        get
+        {
+            if (gameDataScriptable.Camp) return gameDataScriptable.Camp.transform.position;
+            else return Player.transform.position;
+        }
+    }
     private Vector3 GoalPos
     {
         get
         {
-            if (gameDataScriptable.Camp != null && (Delivery || Resting)) return CampPos;
+            if (CampExists && (Delivery || Resting)) return CampPos;
             else return Player.transform.position;
         }
     }
@@ -120,18 +146,25 @@ public class Creature : MonoBehaviour
                 break;
 
             case CreatureBehaviour.Delivery:
-                if(gameDataScriptable.Camp == null) ChangeBehaviour(CreatureBehaviour.Follow);
+                //if(gameDataScriptable.Camp == null) ChangeBehaviour(CreatureBehaviour.Follow);
 
-                float campDistance = Vector3.Distance(transform.position, CampPos);
-                if(campDistance > randomizedStop * 1.5f) // Still far
+                if(!CampExists)
                 {
-                    agent.SetDestination(CampPos);
+                    agent.SetDestination(GoalPos);
                 }
-                else // Arrived
+                else
                 {
-                    gameDataScriptable.Camp.Delivery(resourceCarried, resourceQuantity);
-                    resourceQuantity = 0;
-                    ChangeBehaviour(CreatureBehaviour.Follow);
+                    float campDistance = Vector3.Distance(transform.position, CampPos);
+                    if(campDistance > randomizedStop * 1.5f) // Still far
+                    {
+                        agent.SetDestination(CampPos);
+                    }
+                    else // Arrived
+                    {
+                        gameDataScriptable.Camp.Delivery(resourceCarried, resourceQuantity);
+                        resourceQuantity = 0;
+                        ChangeBehaviour(CreatureBehaviour.Follow);
+                    }
                 }
 
                 break;
@@ -150,6 +183,21 @@ public class Creature : MonoBehaviour
         this.resourceCarried = resourceCarried;
         this.resourceQuantity = resourceQuantity;
         ChangeBehaviour(CreatureBehaviour.Delivery);
+
+        // Audio
+        PlaySound(actionAudioClip);
+
+        // Do a jump
+    }
+    
+    // Audio
+    private void PlaySound(AudioClip[] audioClipArray)
+    {
+        if (audioClipArray == null || audioClipArray.Length == 0) return;
+
+        audioSource.volume = Random.Range(0.1f, 0.5f);
+        audioSource.pitch = Random.Range(0.8f, 1.3f);
+        audioSource.PlayOneShot(audioClipArray[Random.Range(0, audioClipArray.Length - 1)]);
     }
 }
 

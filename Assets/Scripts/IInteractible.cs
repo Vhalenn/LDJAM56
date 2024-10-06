@@ -2,7 +2,7 @@ using UnityEngine;
 
 public interface IInteractible
 {
-    bool RequireCreature();
+    int RequireCreature();
     string UIText();
     void SetState(Player player, bool state);
 }

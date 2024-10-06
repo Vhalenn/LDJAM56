@@ -24,25 +24,11 @@ public class Player : MonoBehaviour
     [SerializeField] private SerializedDictionnary<ResourceType, int> resourcesDico = new();
     public SerializedDictionnary<ResourceType, int> ResourcesDico => resourcesDico;
 
-    public int QuantityCarried
-    {
-        get
-        {
-            int quantity = 0;
-            if (resourcesDico == null || resourcesDico.Count == 0) return quantity;
-
-            foreach (KeyValuePair<ResourceType, int> pair in resourcesDico)
-            {
-                quantity += pair.Value;
-            }
-            return quantity;
-        }
-    }
+    public int QuantityCarried => Utility.GetDictionaryQuantity(resourcesDico);
 
     private const int MAX_QUANTITY_CARRIED_PLAYER = 30;
-    private const int MAX_QUANTITY_CARRIED_CREATURE = 4;
     public bool IsFull => QuantityCarried >= MAX_QUANTITY_CARRIED_PLAYER;
-
+    private Vector3 SPAWN_POS => gameDataScriptable.Game.SpawnPos;
 
     [Header("Storage")]
     [SerializeField] private Camera mainCam;
@@ -74,11 +60,36 @@ public class Player : MonoBehaviour
         if (Input.GetButtonDown("Use")) UseInteractible();
 
         AskForDelivery();
+
+        if(transform.position.y < -5.0f)
+        {
+            Respawn();
+        }
     }
 
     private void FixedUpdate()
     {
         MoveChara();
+    }
+
+    private void Respawn()
+    {
+        if (gameDataScriptable && gameDataScriptable.Camp)
+        {
+            transform.position = gameDataScriptable.Camp.transform.position + Vector3.up;
+            return;
+        }
+
+        if (gameDataScriptable && gameDataScriptable.CreatureCount > 0)
+        {
+            Creature crea = gameDataScriptable.GetFirstCreature;
+            if(crea)
+            {
+                transform.position = crea.transform.position + Vector3.up;
+            }
+        }
+
+        transform.position = SPAWN_POS;
     }
 
     // Movement
@@ -218,13 +229,13 @@ public class Player : MonoBehaviour
     private void SetUITargetText() // Called really often
     {
         if (DicoEmpty) return;
-        bool requireCrea = interactionDico.First().Key.RequireCreature();
+        bool requireCrea = interactionDico.First().Key.RequireCreature() > 0;
 
         if(!requireCrea)
         {
             SetUITargetText(interactibleText);
         }
-        else if (IsFull && gameDataScriptable.FindAvailableCreature() != null)// If dont need crea OR have creatures around
+        else if (IsFull && gameDataScriptable.FindAvailableCreature() == null)// If dont need crea OR have creatures around
         {
             SetUITargetText("Full");
         }
@@ -244,7 +255,7 @@ public class Player : MonoBehaviour
         if (DicoEmpty) return;
 
         IInteractible interactible = interactionDico.First().Key;
-        if (interactible.RequireCreature() && IsFull)
+        if (interactible.RequireCreature() > 0 && IsFull)
         {
             SetUITargetText("Full");
             return;
@@ -277,24 +288,25 @@ public class Player : MonoBehaviour
 
     private void AskForDelivery()
     {
-        if (QuantityCarried > 0)
+        if (QuantityCarried <= 0 || gameDataScriptable.Camp == null) return;
+        
+        // Can do delivery
+        Creature crea = gameDataScriptable.FindAvailableCreature();
+        if (!crea) return;
+
+        KeyValuePair<ResourceType, int> toDeliver = resourcesDico.Last();
+
+        int quantity = Mathf.Min(toDeliver.Value, crea.CapacityCarried);
+        crea.DoDelivery(toDeliver.Key, quantity);
+
+        resourcesDico[toDeliver.Key] -= quantity;
+        if (resourcesDico[toDeliver.Key] <= 0)
         {
-            Creature crea = gameDataScriptable.FindAvailableCreature();
-            if (!crea) return;
-
-            KeyValuePair<ResourceType, int> toDeliver = resourcesDico.Last();
-
-            int quantity = Mathf.Min(toDeliver.Value, MAX_QUANTITY_CARRIED_CREATURE);
-            crea.DoDelivery(toDeliver.Key, quantity);
-
-            resourcesDico[toDeliver.Key] -= quantity;
-            if (resourcesDico[toDeliver.Key] <= 0)
-            {
-                resourcesDico.Remove(toDeliver.Key);
-            }
-
-            UpdateBackpack();
+            resourcesDico.Remove(toDeliver.Key);
         }
+
+        UpdateBackpack();
+        
     }
         
 
@@ -309,11 +321,14 @@ public class Player : MonoBehaviour
 
     // Visuals
     #region Visual
-    private void UpdateBackpack()
+    public void UpdateBackpack()
     {
         int quantity = QuantityCarried;
 
-        if (resourceText) resourceText.text = $"{quantity}/{MAX_QUANTITY_CARRIED_PLAYER}";
+        if (resourceText)
+        {
+            resourceText.text = Utility.GetResourceAmountText(resourcesDico, MAX_QUANTITY_CARRIED_PLAYER);
+        }
 
         quantity /= 2;
         for (int i = 0; i < backpackObjects.Length; i++)

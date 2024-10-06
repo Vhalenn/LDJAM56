@@ -21,9 +21,9 @@ public class Interactible : MonoBehaviour, IInteractible
         }
     }
 
-    public virtual bool RequireCreature()
+    public virtual int RequireCreature()
     {
-        return false;
+        return 0;
     }
 
     public virtual string UIText()

@@ -697,7 +697,7 @@ SurfaceDescription SurfaceDescriptionFunction(SurfaceDescriptionInputs IN)
     // COLOR
     float4 _Multiply_d52a35b5dd3d4e9baa9e9849ad20df06_Out_2_Vector4;
     Unity_Multiply_float4_float4(_Property_95e04af6f4924049a6627d8ad35532b3_Out_0_Vector4, _SampleTexture2D_7388a7ddbf6648ec92c3bb54ed055048_RGBA_0_Vector4, _Multiply_d52a35b5dd3d4e9baa9e9849ad20df06_Out_2_Vector4);
-    surface.BaseColor = (_Multiply_d52a35b5dd3d4e9baa9e9849ad20df06_Out_2_Vector4.xyz) - 0.015;
+    surface.BaseColor = (_Multiply_d52a35b5dd3d4e9baa9e9849ad20df06_Out_2_Vector4.xyz) - 0.15; // EDITED HERE
     surface.Alpha = _SampleTexture2D_7388a7ddbf6648ec92c3bb54ed055048_A_7_Float;
     return surface;
 }
