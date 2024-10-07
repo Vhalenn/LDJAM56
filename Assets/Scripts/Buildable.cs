@@ -1,10 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using DG.Tweening;
+
 public class Buildable : Interactible
 {
     [SerializeField] private GameDataScriptable gameDataScriptable;
     [SerializeField] private GameObject model;
+    [SerializeField] private GameObject navMeshBlocker;
+    [SerializeField] private bool useRigidbody;
     [SerializeField] private bool reverseModelState;
 
     [Header("Requirement")]
@@ -52,7 +56,7 @@ public class Buildable : Interactible
         int playerQuantity = gameDataScriptable.ResourceQuantityPlayerHas(requirementRessource.Type);
         color = playerQuantity > requirementQuantity ? "a4ffaa" : "ffa4b2";
 
-        text = $"<sprite name=Hammer> > <color=#{color}>{requirementQuantity}</color><size=75%>({playerQuantity})</size> <sprite name={requirementRessource.Type}>";
+        text = $"<sprite name=Hammer><sprite name=Arrow><color=#{color}>{requirementQuantity}</color><size=75%>({playerQuantity})</size> <sprite name={requirementRessource.Type}>";
         return text;
     }
 
@@ -87,8 +91,28 @@ public class Buildable : Interactible
 
         if(player) player.RemoveInteractible(this);
 
-        if(reverseModelState) model.SetActive(!state);
-        else model.SetActive(state);
+        if(useRigidbody)
+        {
+            if(navMeshBlocker) navMeshBlocker.SetActive(reverseModelState ? !state : state);
+
+            Rigidbody[] rigidBodyArray = model.GetComponentsInChildren<Rigidbody>();
+
+            foreach(Rigidbody rigidbody in rigidBodyArray)
+            {
+                rigidbody.isKinematic = !state;
+
+                if(state)
+                {
+                    rigidbody.AddExplosionForce(50, transform.position, 15);
+                    rigidbody.transform.DOScale(0.01f, 15f).OnComplete(() => rigidbody.gameObject.SetActive(false));
+                }
+            }
+        }
+        else
+        {
+            if(reverseModelState) model.SetActive(!state);
+            else model.SetActive(state);
+        }
         used = state;
 
     }

@@ -4,6 +4,9 @@ using UnityEngine.Events;
 public class ActivateWithKeyPress : MonoBehaviour
 {
     [SerializeField] KeyCode keyCode;
+    [SerializeField] string btnName = string.Empty;
+
+    [Header("Action")]
     [SerializeField] UnityEvent keyEvent;
     [SerializeField] bool onlyInEditor;
 
@@ -11,7 +14,8 @@ public class ActivateWithKeyPress : MonoBehaviour
     {
         if (onlyInEditor && !Application.isEditor) return;
 
-        if (Input.GetKeyDown(keyCode)) Activate(); // The action
+        if(!string.IsNullOrEmpty(btnName) && Input.GetButtonDown(btnName)) Activate();
+        else if (Input.GetKeyDown(keyCode)) Activate(); // The action
     }
 
     private void Activate()

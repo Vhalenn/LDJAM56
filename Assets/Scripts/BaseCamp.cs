@@ -8,13 +8,14 @@ public class BaseCamp : MonoBehaviour
     [SerializeField] private GameDataScriptable gameDataScriptable;
     [SerializeField] private TextMeshPro resourceText;
     [SerializeField] private GameObject whenActive;
+    [SerializeField] private Transform metalPlateParent;
 
     [Header("Var")]
     [SerializeField] private int campIndex = 0; public int CampIndex => campIndex;
     [SerializeField] private float maxLifePoints = 1000; public float MaxLifePoints => maxLifePoints;
     private float foodConsumedRate = 0.075f;
     private float woodConsumedRate = 0.02f;
-    private float damageRate = 0.15f;
+    private float damageRate = 0.12f;
 
     [Header("Storage")]
     [SerializeField] private bool activeCamp;
@@ -64,7 +65,7 @@ public class BaseCamp : MonoBehaviour
 
     private void Start()
     {
-        if(campIndex == 0) gameDataScriptable.Camp = this;
+        if (campIndex == 0) SetBaseCamp();
 
         lifePoints = maxLifePoints;
         UpdateUIInfos();
@@ -85,7 +86,8 @@ public class BaseCamp : MonoBehaviour
 
             // FOOD LOOP
             changed |= ResourceLifeCheck(ResourceType.Food, ref foodConsumed, foodConsumedRate, creaCount);
-            changed |= ResourceLifeCheck(ResourceType.Wood, ref woodConsumed, woodConsumedRate, creaCount);
+            //changed |= ResourceLifeCheck(ResourceType.Wood, ref woodConsumed, woodConsumedRate, creaCount);
+            // wood consumtion feels harsh
 
             if (changed) UpdateUIInfos();
 
@@ -123,6 +125,7 @@ public class BaseCamp : MonoBehaviour
             else // Takes damage
             {
                 lifePoints -= Time.deltaTime * damageRate * creaCount;
+                if (activeCamp && lifePoints < 0) gameDataScriptable.Game.ShowEndScreen(false); // Loose
             }
         }
 
@@ -145,6 +148,7 @@ public class BaseCamp : MonoBehaviour
         UpdateUIInfos();
     }
 
+    [ContextMenu("Update UI")]
     public void UpdateUIInfos()
     {
         if (!activeCamp)
@@ -153,15 +157,36 @@ public class BaseCamp : MonoBehaviour
             return;
         }
 
+        int lifePercentage = LifePointPercent;
         if (resourceText)
         {
-            resourceText.text = Utility.GetResourceAmountText(resourcesDico, 0) + $"\n   {LifePointPercent}%";
+            resourceText.text = Utility.GetResourceAmountText(resourcesDico, 0) + $"\n   {lifePercentage}%";
             gameDataScriptable.CampInfoData = resourceText.text;
+        }
+
+        if(metalPlateParent)
+        {
+            int childCount = metalPlateParent.childCount;
+            for (int i = 0; i < metalPlateParent.childCount; i++)
+            {
+                float elementPercentage = (i / (float)childCount)*100.0f;
+                metalPlateParent.GetChild(i).gameObject.SetActive(lifePercentage > elementPercentage);
+            }
         }
 
 
         gameDataScriptable.FoodLevel = FoodLevel;
         gameDataScriptable.CampLevel = LifePointPercent;
+    }
+
+    private void SetBaseCamp()
+    {
+        if(gameDataScriptable.Camp != null && gameDataScriptable.Camp != this)
+        {
+            gameDataScriptable.Camp.gameObject.SetActive(false); // Remove previous camp
+        }
+
+        gameDataScriptable.Camp = this;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -170,7 +195,8 @@ public class BaseCamp : MonoBehaviour
 
         if(other.TryGetComponent(out Player player)) // If this is the player
         {
-            gameDataScriptable.Camp = this;
+            
+            SetBaseCamp();
 
             SerializedDictionnary<ResourceType, int> playerResources = player.ResourcesDico;
 

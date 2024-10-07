@@ -3,16 +3,20 @@ using UnityEngine;
 
 public class GameManager : Singleton<GameManager>
 {
-    [SerializeField] private bool gameMode; // Peaceful / 
+    [SerializeField] private bool mainMenu;
+    [SerializeField] private bool peacefulGameMode; // Peaceful / Resource managment
 
     [Header("Main")]
     [SerializeField] private GameDataScriptable gameDataScriptable;
     [SerializeField] private Player player; public Player Player => player;
     [SerializeField] private MainMenuUI menuUI; public MainMenuUI MenuUI => menuUI;
     [SerializeField] private ResourceManager resourceManager; public ResourceManager ResourceManager => resourceManager;
+    [SerializeField] private AudioManager audioManager;
     [SerializeField] private Transform spawnPos;
-    public Vector3 SpawnPos => spawnPos.position;
+    public Vector3 SpawnPos => spawnPos ? spawnPos.position : Vector3.up;
 
+    [Header("MainMenu")]
+    [SerializeField] private LayerMask raycastLayerMask;
 
     [Header("Team")]
     [SerializeField] private int totalCreatureOnMap; public int TotalCreatureOnMap => totalCreatureOnMap;
@@ -35,6 +39,8 @@ public class GameManager : Singleton<GameManager>
     [Header("Player life")]
     [SerializeField] private int maxPlayerLife = 100;
     [SerializeField] private int playerLife = 100;
+    private Camera mainCam;
+
     private void Awake()
     {
         Instance = this;
@@ -49,7 +55,18 @@ public class GameManager : Singleton<GameManager>
 
     private void Update()
     {
-        
+        if(mainMenu && player)
+        {
+            if (!mainCam) mainCam = Camera.main;
+
+            Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit, 300, raycastLayerMask))
+            {
+                player.transform.position = hit.point;
+                //Debug.Log(hit.transform.name);
+            }
+        }
     }
 
     [ContextMenu("Count all creature")]
@@ -63,12 +80,13 @@ public class GameManager : Singleton<GameManager>
 
     public void NightStart()
     {
-        
+        audioManager.NightStart();
     }
 
     public void NewDay()
     {
-        resourceManager.NewDay();
+        if(resourceManager) resourceManager.NewDay();
+        audioManager.NewDay();
     }
 
 
@@ -84,6 +102,27 @@ public class GameManager : Singleton<GameManager>
         creatureList = new();
     }
 
+    // HELP
+    public Vector3 GetNearestLockedCage(Vector3 pos)
+    {
+        Vector3 cagePos = pos;
+        float minDist = float.MaxValue;
+
+        for (int i = 0; i < cageArray.Length; i++)
+        {
+            if (cageArray[i] == null || cageArray[i].Used) continue;
+
+            float dist = Vector3.Distance(cageArray[i].transform.position, pos);
+            if(dist < minDist)
+            {
+                minDist = dist;
+                cagePos = cageArray[i].transform.position;
+            }
+        }
+
+        return cagePos;
+    }
+
     // TEAM
     public void AddCreature(Creature creature)
     {
@@ -97,6 +136,11 @@ public class GameManager : Singleton<GameManager>
 
             creatureDico[creature.Type]++;
             creatureList.Add(creature);
+        }
+
+        if(creatureList.Count >= TotalCreatureOnMap)
+        {
+            ShowEndScreen(true);
         }
     }
 
@@ -120,5 +164,13 @@ public class GameManager : Singleton<GameManager>
         }
 
         return null;
+    }
+
+    public void ShowEndScreen(bool win)
+    {
+        if (mainMenu) return;
+
+        gameDataScriptable.GameIsEnded = true;
+        if(menuUI) menuUI.ShowEndScreen(win);
     }
 }

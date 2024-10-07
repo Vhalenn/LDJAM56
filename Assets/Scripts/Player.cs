@@ -11,6 +11,7 @@ public class Player : MonoBehaviour
     [SerializeField] private Rigidbody rb;
     [SerializeField] private Transform backpackTr;
     [SerializeField] private TextMeshPro resourceText;
+    [SerializeField] private AnimCharacterTween animTween;
 
     [Header("Param")]
     [SerializeField] private float maxAcce = 5;
@@ -30,6 +31,9 @@ public class Player : MonoBehaviour
     public bool IsFull => QuantityCarried >= MAX_QUANTITY_CARRIED_PLAYER;
     private Vector3 SPAWN_POS => gameDataScriptable.Game.SpawnPos;
 
+    [Header("Arrow")]
+    [SerializeField] private Transform helpArrow;
+
     [Header("Storage")]
     [SerializeField] private Camera mainCam;
     [SerializeField] private GameObject[] backpackObjects;
@@ -37,6 +41,7 @@ public class Player : MonoBehaviour
     [SerializeField] private Vector2 playerInput;
     [SerializeField] private Vector3 velocity;
     public Vector3 Velocity { get => velocity; set => velocity = value; }
+    [SerializeField] private Vector3 cageDir;
 
     private void Start()
     {
@@ -53,18 +58,34 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
+        if (transform.position.y < -5.0f)
+        {
+            Respawn();
+        }
+
+        if (!gameDataScriptable || gameDataScriptable.GameIsEnded)
+        {
+            velocity = Vector3.zero;
+            return;
+        }
+
         playerInput.x = Input.GetAxis("Horizontal");
         playerInput.y = Input.GetAxis("Vertical");
+        playerInput = Vector3.ClampMagnitude(playerInput, 1f);
 
         SetUITargetText();
         if (Input.GetButtonDown("Use")) UseInteractible();
 
         AskForDelivery();
 
-        if(transform.position.y < -5.0f)
-        {
-            Respawn();
-        }
+        HelpUpdate();
+        
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(transform.position, transform.position + cageDir);
     }
 
     private void FixedUpdate()
@@ -112,6 +133,7 @@ public class Player : MonoBehaviour
         }
 
         rb.linearVelocity = velocity;
+        animTween.VelMagnitude = velocity.magnitude;
     }
 
     private void AdjustVelocity(Vector3 desiredVelocity)
@@ -343,4 +365,20 @@ public class Player : MonoBehaviour
 
     #endregion
     // END - Visuals
+
+    public void SwitchHelpMode()
+    {
+        helpArrow.gameObject.SetActive(!helpArrow.gameObject.activeSelf);
+    }
+
+    private void HelpUpdate()
+    {
+        if (!helpArrow.gameObject.activeSelf) return;
+        // ELSE - help activated
+        
+        Vector3 pos = transform.position;
+        cageDir = gameDataScriptable.Game.GetNearestLockedCage(pos) - pos;
+        cageDir.y = 0;
+        helpArrow.rotation = Quaternion.LookRotation(cageDir, Vector3.up);
+    }
 }

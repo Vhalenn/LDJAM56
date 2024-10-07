@@ -21,6 +21,7 @@ public class DayNightCycle : MonoBehaviour
 
     private void Start()
     {
+        previousDay = -1;
         totalTime = 0.15f;
         startYSunRot = sunLight.transform.eulerAngles.y;
     }

@@ -7,6 +7,7 @@ public class Creature : MonoBehaviour
     [SerializeField] private NavMeshAgent agent;
     [SerializeField] private Transform model;
     [SerializeField] private GameObject readySignal;
+    [SerializeField] private AnimCharacterTween animTween;
 
     [Header("Var")]
     [SerializeField] private CreatureType type; public CreatureType Type => type;
@@ -75,11 +76,15 @@ public class Creature : MonoBehaviour
 
         if (!gameDataScriptable) return;
 
-        if(resourceQuantity > 0) ChangeBehaviour(CreatureBehaviour.Delivery);
-        else if (CampExists && gameDataScriptable.Night) ChangeBehaviour(CreatureBehaviour.Rest);
+        bool isNight = gameDataScriptable.Night;
+        if (type == CreatureType.Rock) isNight = !isNight;
+
+        if (resourceQuantity > 0) ChangeBehaviour(CreatureBehaviour.Delivery);
+        else if (CampExists && isNight) ChangeBehaviour(CreatureBehaviour.Rest);
         else ChangeBehaviour(CreatureBehaviour.Follow);
 
         ApplyBehaviour();
+        animTween.VelMagnitude = agent.velocity.magnitude;
     }
 
     public void Free()
@@ -195,8 +200,8 @@ public class Creature : MonoBehaviour
     {
         if (audioClipArray == null || audioClipArray.Length == 0) return;
 
-        audioSource.volume = Random.Range(0.1f, 0.5f);
-        audioSource.pitch = Random.Range(0.8f, 1.3f);
+        audioSource.volume = Random.Range(0.1f, 0.3f);
+        audioSource.pitch = Random.Range(1.2f, 3f);
         audioSource.PlayOneShot(audioClipArray[Random.Range(0, audioClipArray.Length - 1)]);
     }
 }

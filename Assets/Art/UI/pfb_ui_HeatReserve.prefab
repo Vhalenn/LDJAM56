@@ -230,6 +230,11 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5350207248310451553, guid: e7e45e59c4d05144fb5d65c7898b6efb,
+        type: 3}
+      propertyPath: m_PixelsPerUnitMultiplier
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 5625765817268066315, guid: e7e45e59c4d05144fb5d65c7898b6efb,
         type: 3}
       propertyPath: m_AnchorMax.x
@@ -249,6 +254,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: pfb_ui_Slider
+      objectReference: {fileID: 0}
+    - target: {fileID: 8957823938716175809, guid: e7e45e59c4d05144fb5d65c7898b6efb,
+        type: 3}
+      propertyPath: m_PixelsPerUnitMultiplier
+      value: 6
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -4,6 +4,9 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "GameDataScriptable", menuName = "Scriptable Objects/GameDataScriptable")]
 public class GameDataScriptable : ScriptableObject
 {
+    [SerializeField] private bool gameIsEnded; // Win or Loose;
+    public bool GameIsEnded { get => gameIsEnded; set => gameIsEnded = value; }
+
     [Header("Main Actors")]
     [SerializeField] private GameManager game; public GameManager Game { get => game; set => game = value; }
     [SerializeField] private Player player; public Player Player { get => player; set => player = value; }
@@ -35,6 +38,8 @@ public class GameDataScriptable : ScriptableObject
 
     public void Clean()
     {
+        gameIsEnded = false;
+
         game = null;
         player = null;
         ui = null;

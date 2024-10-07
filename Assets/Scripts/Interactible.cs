@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class Interactible : MonoBehaviour, IInteractible
 {
-    [SerializeField] protected bool used;
+    [SerializeField] protected bool used; public bool Used => used;
 
     private void OnTriggerEnter(Collider other)
     {
