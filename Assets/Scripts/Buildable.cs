@@ -11,6 +11,10 @@ public class Buildable : Interactible
     [SerializeField] private bool useRigidbody;
     [SerializeField] private bool reverseModelState;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip audioClip;
+
     [Header("Requirement")]
     [SerializeField] private ResourceDataScriptable requirementRessource;
     [SerializeField] private int requirementQuantity;
@@ -36,9 +40,9 @@ public class Buildable : Interactible
 
         // Check player creature number
         int playerCrea = gameDataScriptable.QuantityPlayerHas(requiredCreatureType);
-        if(playerCrea < requiredCreatureQuantity)
+        if(playerCrea < requiredCreatureQuantity) // Required creature
         {
-            color = playerCrea > requirementQuantity ? "a4ffaa" : "ffa4b2";
+            color = "ffa4b2";
 
             text = $"<color=#{color}>{requiredCreatureQuantity}</color><size=75%>({playerCrea})</size> <sprite name=crea_{requiredCreatureType}>";
             return text;
@@ -47,7 +51,7 @@ public class Buildable : Interactible
 
         if(requirementQuantity <= 0)
         {
-            text = $"<sprite name=Hammer> > <sprite name=Explode>";
+            text = $"<sprite name=Hammer><sprite name=Arrow><sprite name=Explode>";
             return text;
         }
         // Else -> Need ressources
@@ -68,6 +72,8 @@ public class Buildable : Interactible
         {
             // Check if player has enought resources
             if (!player) return;
+
+            if (audioSource && audioClip) audioSource.PlayOneShot(audioClip);
 
             int playerCrea = gameDataScriptable.QuantityPlayerHas(requiredCreatureType);
             if(playerCrea < requiredCreatureQuantity)

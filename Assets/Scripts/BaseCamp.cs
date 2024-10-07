@@ -10,6 +10,12 @@ public class BaseCamp : MonoBehaviour
     [SerializeField] private GameObject whenActive;
     [SerializeField] private Transform metalPlateParent;
 
+
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip firstTimeAudioClip;
+    [SerializeField] private AudioClip damageAudioClip;
+
     [Header("Var")]
     [SerializeField] private int campIndex = 0; public int CampIndex => campIndex;
     [SerializeField] private float maxLifePoints = 1000; public float MaxLifePoints => maxLifePoints;
@@ -20,6 +26,9 @@ public class BaseCamp : MonoBehaviour
     [Header("Storage")]
     [SerializeField] private bool activeCamp;
     [SerializeField] private float lifePoints = 0; public float LifePoints => lifePoints;
+    [SerializeField] private int prevLifePoints;
+    [SerializeField] private bool touched = false;
+
     public float FoodLevel
     {
         get
@@ -68,6 +77,7 @@ public class BaseCamp : MonoBehaviour
         if (campIndex == 0) SetBaseCamp();
 
         lifePoints = maxLifePoints;
+        prevLifePoints = Mathf.CeilToInt(maxLifePoints);
         UpdateUIInfos();
     }
 
@@ -125,6 +135,18 @@ public class BaseCamp : MonoBehaviour
             else // Takes damage
             {
                 lifePoints -= Time.deltaTime * damageRate * creaCount;
+                if (Mathf.FloorToInt(lifePoints) < prevLifePoints)
+                {
+                    prevLifePoints = Mathf.FloorToInt(lifePoints);
+
+                    if (audioSource && damageAudioClip) // Takes damage sound
+                    {
+                        audioSource.volume = Random.Range(0.01f, 0.5f);
+                        audioSource.pitch = Random.Range(0.6f, 1.2f);
+                        audioSource.PlayOneShot(damageAudioClip);
+                    }
+                }
+                
                 if (activeCamp && lifePoints < 0) gameDataScriptable.Game.ShowEndScreen(false); // Loose
             }
         }
@@ -183,6 +205,9 @@ public class BaseCamp : MonoBehaviour
     {
         if(gameDataScriptable.Camp != null && gameDataScriptable.Camp != this)
         {
+            // Transfer resources from previous camps
+            resourcesDico = gameDataScriptable.Camp.ResourcesDico;
+
             gameDataScriptable.Camp.gameObject.SetActive(false); // Remove previous camp
         }
 
@@ -195,7 +220,17 @@ public class BaseCamp : MonoBehaviour
 
         if(other.TryGetComponent(out Player player)) // If this is the player
         {
-            
+            if(!touched)
+            {
+                // Play sound first time
+                if (audioSource && firstTimeAudioClip)
+                {
+                    audioSource.volume = 0.5f;
+                    audioSource.PlayOneShot(firstTimeAudioClip);
+                }
+            }
+
+            touched = true;
             SetBaseCamp();
 
             SerializedDictionnary<ResourceType, int> playerResources = player.ResourcesDico;

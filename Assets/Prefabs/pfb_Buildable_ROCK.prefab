@@ -63,6 +63,16 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4417445842983621246, guid: 11db6cd86e5c9874da8577135f9e8a98,
+        type: 3}
+      propertyPath: m_Pitch
+      value: 0.79
+      objectReference: {fileID: 0}
+    - target: {fileID: 4417445842983621246, guid: 11db6cd86e5c9874da8577135f9e8a98,
+        type: 3}
+      propertyPath: m_Volume
+      value: 0.642
+      objectReference: {fileID: 0}
     - target: {fileID: 4514177089324528321, guid: 11db6cd86e5c9874da8577135f9e8a98,
         type: 3}
       propertyPath: m_Width
@@ -193,6 +203,11 @@ PrefabInstance:
       propertyPath: m_Center.x
       value: 0.55
       objectReference: {fileID: 0}
+    - target: {fileID: 7578783243610805656, guid: 11db6cd86e5c9874da8577135f9e8a98,
+        type: 3}
+      propertyPath: audioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 9aa3a6248ba60b6439b13dbc66fbe5a9, type: 3}
     - target: {fileID: 7578783243610805656, guid: 11db6cd86e5c9874da8577135f9e8a98,
         type: 3}
       propertyPath: useRigidbody

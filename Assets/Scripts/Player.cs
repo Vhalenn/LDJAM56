@@ -34,6 +34,10 @@ public class Player : MonoBehaviour
     [Header("Arrow")]
     [SerializeField] private Transform helpArrow;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip audioClip;
+
     [Header("Storage")]
     [SerializeField] private Camera mainCam;
     [SerializeField] private GameObject[] backpackObjects;
@@ -61,6 +65,11 @@ public class Player : MonoBehaviour
         if (transform.position.y < -5.0f)
         {
             Respawn();
+        }
+
+        if(audioSource)
+        {
+            audioSource.volume = velocity.magnitude / maxSpeed;
         }
 
         if (!gameDataScriptable || gameDataScriptable.GameIsEnded)
@@ -294,6 +303,14 @@ public class Player : MonoBehaviour
     {
         if (ressource == null) return;
         AddResource(ressource.Type, ressource.GetRandomQuantity());
+
+        // Play sound
+        if (audioSource && audioClip)
+        {
+            audioSource.volume = Random.Range(0.01f, 0.25f);
+            audioSource.pitch = Random.Range(0.8f, 1.5f);
+            audioSource.PlayOneShot(audioClip);
+        }
     }
 
     public void AddResource(ResourceType type, int quantity) // When camp is destroyed
