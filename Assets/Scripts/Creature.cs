@@ -29,7 +29,7 @@ public class Creature : MonoBehaviour
 
     [Header("Storage")]
     [SerializeField] private ResourceType resourceCarried;
-    [SerializeField] int resourceQuantity;
+    [SerializeField] int resourceQuantity; public int ResourceQuantity => resourceQuantity;
     private bool CampExists => gameDataScriptable.Camp;
 
     private Player player;
@@ -103,7 +103,7 @@ public class Creature : MonoBehaviour
         }
 
         agent.speed = Resting || Delivery ? randomizedSpeed * 1.5f : randomizedSpeed;
-        agent.stoppingDistance = Resting || Delivery ? randomizedStop * 0.33f : randomizedStop;
+        agent.stoppingDistance = Resting || Delivery ? randomizedStop * 0.66f : randomizedStop;
     }
 
     private Vector3 CampPos

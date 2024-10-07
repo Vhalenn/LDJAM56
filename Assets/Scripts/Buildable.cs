@@ -68,6 +68,7 @@ public class Buildable : Interactible
             int playerCrea = gameDataScriptable.QuantityPlayerHas(requiredCreatureType);
             if(playerCrea < requiredCreatureQuantity)
             {
+                Debug.Log($"Players has {playerCrea} vs {requiredCreatureQuantity} needed");
                 return;
             }
 

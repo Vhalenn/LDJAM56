@@ -10,6 +10,7 @@ public class UIInfos : MonoBehaviour
     [SerializeField] private TextMeshProUGUI creatureCount;
     [SerializeField] private Slider foodSlider;
     [SerializeField] private Slider woodSlider;
+    [SerializeField] private TextMeshProUGUI campInfo;
 
     private void Update()
     {
@@ -25,10 +26,17 @@ public class UIInfos : MonoBehaviour
             quantity = gameDataScriptable.Game.QuantityPlayerHas(CreatureType.Rock);
             if (quantity > 0) text += $"     <sprite name=crea_{CreatureType.Rock}>{quantity}";
 
+            text += $"     {gameDataScriptable.CreatureCount}/{gameDataScriptable.Game.TotalCreatureOnMap}";
             creatureCount.text = text;
         }
 
         if (foodSlider) foodSlider.value = gameDataScriptable.FoodLevel;
         if (woodSlider) woodSlider.value = gameDataScriptable.CampLevel;
+
+        if(campInfo)
+        {
+            campInfo.text = gameDataScriptable.Camp ? gameDataScriptable.CampInfoData : null;
+        }
+
     }
 }

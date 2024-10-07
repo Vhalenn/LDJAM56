@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class GameManager : Singleton<GameManager>
 {
+    [SerializeField] private bool gameMode; // Peaceful / 
+
     [Header("Main")]
     [SerializeField] private GameDataScriptable gameDataScriptable;
     [SerializeField] private Player player; public Player Player => player;
@@ -13,6 +15,8 @@ public class GameManager : Singleton<GameManager>
 
 
     [Header("Team")]
+    [SerializeField] private int totalCreatureOnMap; public int TotalCreatureOnMap => totalCreatureOnMap;
+    [SerializeField] private Cage[] cageArray;
     [SerializeField] private int creatureCount => creatureList.Count;
     public int CreatureCount => creatureCount;
     [SerializeField] private List<Creature> creatureList;
@@ -26,6 +30,7 @@ public class GameManager : Singleton<GameManager>
             return creatureList[0];
         }
     }
+
 
     [Header("Player life")]
     [SerializeField] private int maxPlayerLife = 100;
@@ -45,6 +50,15 @@ public class GameManager : Singleton<GameManager>
     private void Update()
     {
         
+    }
+
+    [ContextMenu("Count all creature")]
+    private void GetTotalCreatureOnMap()
+    {
+        var creatureArray = FindObjectsByType<Creature>(FindObjectsSortMode.InstanceID);
+        totalCreatureOnMap = creatureArray.Length;
+
+        cageArray = FindObjectsByType<Cage>(FindObjectsSortMode.InstanceID);
     }
 
     public void NightStart()
@@ -100,7 +114,9 @@ public class GameManager : Singleton<GameManager>
 
         for (int i = 0; i < creatureList.Count; i++)
         {
-            if (creatureList[i].NearPlayer) return creatureList[i];
+            Creature crea = creatureList[i];
+            if (crea == null) continue;
+            if (crea.NearPlayer && crea.ResourceQuantity <= 0) return crea;
         }
 
         return null;

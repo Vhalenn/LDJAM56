@@ -271,16 +271,20 @@ public class Player : MonoBehaviour
     public void AddResource(ResourceDataScriptable ressource)
     {
         if (ressource == null) return;
+        AddResource(ressource.Type, ressource.GetRandomQuantity());
+    }
+
+    public void AddResource(ResourceType type, int quantity) // When camp is destroyed
+    {
         if (resourcesDico == null) resourcesDico = new();
 
-        int quantity = ressource.GetRandomQuantity();
-        if (resourcesDico.ContainsKey(ressource.Type))
+        if (resourcesDico.ContainsKey(type))
         {
-            resourcesDico[ressource.Type] += quantity;
+            resourcesDico[type] += quantity;
         }
         else
         {
-            resourcesDico.Add(ressource.Type, quantity);
+            resourcesDico.Add(type, quantity);
         }
 
         UpdateBackpack();
@@ -288,7 +292,7 @@ public class Player : MonoBehaviour
 
     private void AskForDelivery()
     {
-        if (QuantityCarried <= 0 || gameDataScriptable.Camp == null) return;
+        if (QuantityCarried <= 0/* || gameDataScriptable.Camp == null*/) return;
         
         // Can do delivery
         Creature crea = gameDataScriptable.FindAvailableCreature();

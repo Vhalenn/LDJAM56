@@ -7,12 +7,14 @@ public class BaseCamp : MonoBehaviour
 {
     [SerializeField] private GameDataScriptable gameDataScriptable;
     [SerializeField] private TextMeshPro resourceText;
+    [SerializeField] private GameObject whenActive;
 
     [Header("Var")]
     [SerializeField] private int campIndex = 0; public int CampIndex => campIndex;
     [SerializeField] private float maxLifePoints = 1000; public float MaxLifePoints => maxLifePoints;
-    private float foodConsumedRate = 0.025f;
-    private float woodConsumedRate = 0.005f;
+    private float foodConsumedRate = 0.075f;
+    private float woodConsumedRate = 0.02f;
+    private float damageRate = 0.15f;
 
     [Header("Storage")]
     [SerializeField] private bool activeCamp;
@@ -22,11 +24,11 @@ public class BaseCamp : MonoBehaviour
         get
         {
             if (!gameDataScriptable || gameDataScriptable.CreatureCount == 0 || gameDataScriptable.CreatureCount == 0) return 0;
-            return FoodCount / (gameDataScriptable.CreatureCount * 0.5f);
+            return FoodCount / (gameDataScriptable.CreatureCount * 0.1f);
         }
     }
 
-    public float WoodLevel
+    public float WoodLevel // NOT USED
     {
         get
         {
@@ -73,6 +75,7 @@ public class BaseCamp : MonoBehaviour
         if (!gameDataScriptable) return;
 
         activeCamp = gameDataScriptable.Camp == this;
+        whenActive.SetActive(activeCamp);
         if (!activeCamp) return;
 
         if(gameDataScriptable.Night) // Consume food
@@ -81,22 +84,33 @@ public class BaseCamp : MonoBehaviour
             bool changed = false;
 
             // FOOD LOOP
-            foodConsumed += Time.deltaTime * foodConsumedRate * creaCount;
-            woodConsumed += Time.deltaTime * woodConsumedRate * creaCount;
-            changed |= ResourceLifeCheck(ResourceType.Food, ref foodConsumed, creaCount);
-            changed |= ResourceLifeCheck(ResourceType.Wood, ref woodConsumed, creaCount);
+            changed |= ResourceLifeCheck(ResourceType.Food, ref foodConsumed, foodConsumedRate, creaCount);
+            changed |= ResourceLifeCheck(ResourceType.Wood, ref woodConsumed, woodConsumedRate, creaCount);
 
-            if (changed) UpdateUIInfos(); ;
+            if (changed) UpdateUIInfos();
+
+            if(!Usable) // CAMP DESTROYED
+            {
+                foreach(KeyValuePair<ResourceType, int> pair in resourcesDico)
+                {
+                    gameDataScriptable.Player.AddResource(pair.Key, pair.Value);
+                }
+                resourcesDico = new();
+
+                gameDataScriptable.CampInfoData = string.Empty;
+                gameDataScriptable.Camp = null;
+                gameObject.SetActive(false);
+                // Message : Ho no the camp have been destroyed, seek another one
+            }
         }
     }
 
-    private bool ResourceLifeCheck(ResourceType type, ref float consumed, int creaCount)
+    private bool ResourceLifeCheck(ResourceType type, ref float consumed, float consumeRate, int creaCount)
     {
         bool changed = false;
 
-        // FOOD LOOP
-        consumed += Time.deltaTime * foodConsumedRate * creaCount;
-        if (foodConsumed >= 1)
+        consumed += Time.deltaTime * consumeRate * creaCount;
+        if (consumed >= 1)
         {
             if (!resourcesDico.ContainsKey(type)) resourcesDico.Add(type, 0);
             changed = true;
@@ -108,7 +122,7 @@ public class BaseCamp : MonoBehaviour
             }
             else // Takes damage
             {
-                lifePoints -= Time.deltaTime * 3f;
+                lifePoints -= Time.deltaTime * damageRate * creaCount;
             }
         }
 
@@ -133,10 +147,18 @@ public class BaseCamp : MonoBehaviour
 
     public void UpdateUIInfos()
     {
+        if (!activeCamp)
+        {
+            if (resourceText) resourceText.text = string.Empty;
+            return;
+        }
+
         if (resourceText)
         {
-            resourceText.text = Utility.GetResourceAmountText(resourcesDico, 0) + $"\n\n {LifePointPercent}%";
+            resourceText.text = Utility.GetResourceAmountText(resourcesDico, 0) + $"\n   {LifePointPercent}%";
+            gameDataScriptable.CampInfoData = resourceText.text;
         }
+
 
         gameDataScriptable.FoodLevel = FoodLevel;
         gameDataScriptable.CampLevel = LifePointPercent;

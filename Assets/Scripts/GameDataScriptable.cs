@@ -19,6 +19,9 @@ public class GameDataScriptable : ScriptableObject
     [SerializeField] private bool night;
     public bool Night { get => night; set => night = value; }
 
+    [SerializeField] private string campInfoData;
+    public string CampInfoData { get => campInfoData; set => campInfoData = value; }
+
     [Header("Team")]
     public int CreatureCount => game.CreatureCount;
     public Creature GetFirstCreature => game.FirstCreature;
@@ -40,6 +43,7 @@ public class GameDataScriptable : ScriptableObject
         currentTime = 0;
         totalTime = 0;
         night = false;
+        campInfoData = string.Empty;
 
         windForce = 0;
     }
